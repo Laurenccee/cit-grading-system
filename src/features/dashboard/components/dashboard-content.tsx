@@ -112,9 +112,7 @@ export default function DashboardContent({ classes }: DashboardContentProps) {
                   <p className="text-xs font-bold text-foreground/60 uppercase tracking-wide leading-none">
                     Students
                   </p>
-                  <p className="text-xl font-bold text-foreground mt-1">
-                    360
-                  </p>
+                  <p className="text-xl font-bold text-foreground mt-1">360</p>
                 </div>
               </div>
             </Card>
@@ -148,9 +146,7 @@ export default function DashboardContent({ classes }: DashboardContentProps) {
                   <p className="text-xs font-bold text-foreground/60 uppercase tracking-wide leading-none">
                     Attendance
                   </p>
-                  <p className="text-xl font-bold text-foreground mt-1">
-                    92%
-                  </p>
+                  <p className="text-xl font-bold text-foreground mt-1">92%</p>
                 </div>
               </div>
             </Card>
@@ -166,9 +162,7 @@ export default function DashboardContent({ classes }: DashboardContentProps) {
                   <p className="text-xs font-bold text-foreground/60 uppercase tracking-wide leading-none">
                     Avg. Grade
                   </p>
-                  <p className="text-xl font-bold text-foreground mt-1">
-                    85.5
-                  </p>
+                  <p className="text-xl font-bold text-foreground mt-1">85.5</p>
                 </div>
               </div>
             </Card>
