@@ -1,7 +1,13 @@
 'use client';
 
 import { Ellipsis, TrendingUp } from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  XAxis,
+} from 'recharts';
 
 import {
   Card,
@@ -50,7 +56,7 @@ const chartConfig = {
 
 export default function AttendanceChart() {
   return (
-    <Card className="bg-secondary-background text-foreground">
+    <Card className="flex flex-col bg-secondary-background text-foreground">
       <CardHeader className="flex justify-between items-center">
         <CardTitle>Attendance</CardTitle>
         <Button size={'icon'} className="size-7">
@@ -58,32 +64,31 @@ export default function AttendanceChart() {
         </Button>
       </CardHeader>
 
-      <CardContent>
-        <ChartContainer
-          config={chartConfig}
-          className="aspect-auto h-[250px] w-full"
-        >
-          <BarChart accessibilityLayer data={weekdayData}>
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              tickMargin={10}
-              axisLine={false}
-              tickFormatter={(value) =>
-                new Date(value).toLocaleDateString('en-US', {
-                  weekday: 'short',
-                })
-              }
-            />
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent indicator="dot" />}
-            />
-            {/* Bars for Present and Absent */}
-            <Bar dataKey="present" fill="var(--color-present)" radius={4} />
-            <Bar dataKey="absent" fill="var(--color-absent)" radius={4} />
-          </BarChart>
+      <CardContent className="flex flex-col items-center">
+        <ChartContainer config={chartConfig} className="w-full h-[250px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart accessibilityLayer data={weekdayData}>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                tickMargin={10}
+                axisLine={false}
+                tickFormatter={(value) =>
+                  new Date(value).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                  })
+                }
+              />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="dot" />}
+              />
+              {/* Bars for Present and Absent */}
+              <Bar dataKey="present" fill="var(--color-present)" radius={4} />
+              <Bar dataKey="absent" fill="var(--color-absent)" radius={4} />
+            </BarChart>
+          </ResponsiveContainer>
         </ChartContainer>
       </CardContent>
     </Card>

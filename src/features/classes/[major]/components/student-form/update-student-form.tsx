@@ -18,12 +18,11 @@ import {
   InputGroupAddon,
 } from '@/components/ui/input-group';
 import { UserIcon } from 'lucide-react';
-import { updateStudent } from '../actions/student';
-import { Student } from '@/features/students/components/class-table';
-import Combobox from './combobox';
+import { updateStudent } from '../../actions/student';
+import { ClassStudent } from '@/features/classes/types/classes';
 
 interface StudentFormProps {
-  student: Student;
+  student: ClassStudent;
   children?: React.ReactNode;
 }
 
@@ -120,35 +119,6 @@ export default function UpdateStudentForm({
                   <UserIcon />
                 </InputGroupAddon>
               </InputGroup>
-            </div>
-
-            {/* --- Course and Major --- */}
-            <Combobox
-              type="course"
-              name="course"
-              defaultValue={student.course}
-              selectedCourse={selectedCourse}
-              onChange={(value) => setSelectedCourse(value)} // updates major options dynamically
-            />
-            <Combobox
-              type="major"
-              name="major"
-              defaultValue={student.major}
-              selectedCourse={selectedCourse} // dependent on selected course
-            />
-
-            {/* --- Year and Section --- */}
-            <div className="flex gap-2.5">
-              <Combobox
-                type="year_level"
-                name="year_level"
-                defaultValue={student.year_level}
-              />
-              <Combobox
-                type="section"
-                name="section"
-                defaultValue={student.section}
-              />
             </div>
           </div>
 

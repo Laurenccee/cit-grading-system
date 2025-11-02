@@ -58,6 +58,7 @@ import {
   CalendarDays,
   Users,
 } from 'lucide-react';
+import Link from 'next/link';
 
 const iconMap = {
   GalleryVerticalEnd,
@@ -72,6 +73,7 @@ const iconMap = {
 
 export function AppSidebar({ sideBarData }: { sideBarData: any }) {
   const { isMobile } = useSidebar();
+
   const data = sideBarData;
   // Defensive: ensure data is a plain object
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
@@ -116,7 +118,7 @@ export function AppSidebar({ sideBarData }: { sideBarData: any }) {
               <DropdownMenuTrigger className="focus-visible:ring-0" asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="data-[state=open]:bg-main data-[state=open]:text-main-foreground data-[state=open]:outline-border data-[state=open]:outline-2"
+                  className="data-[state=open]:bg-primary data-[state=open]:text-primary-foreground data-[state=open]:outline-border data-[state=open]:outline-2"
                 >
                   <div className="flex aspect-square size-8 items-center justify-center ">
                     {activeTeam.logo &&
@@ -190,7 +192,7 @@ export function AppSidebar({ sideBarData }: { sideBarData: any }) {
                       <SidebarMenuItem>
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton
-                            className="data-[state=open]:bg-main data-[state=open]:outline-border data-[state=open]:text-main-foreground"
+                            className="data-[state=open]:bg-primary data-[state=open]:outline-border data-[state=open]:text-primary-foreground"
                             tooltip={item.title}
                           >
                             {React.createElement(
@@ -211,9 +213,9 @@ export function AppSidebar({ sideBarData }: { sideBarData: any }) {
                                 (subItem: { title: string; url: string }) => (
                                   <SidebarMenuSubItem key={subItem.title}>
                                     <SidebarMenuSubButton asChild>
-                                      <a href={subItem.url}>
+                                      <Link href={subItem.url}>
                                         <span>{subItem.title}</span>
-                                      </a>
+                                      </Link>
                                     </SidebarMenuSubButton>
                                   </SidebarMenuSubItem>
                                 )
@@ -226,7 +228,7 @@ export function AppSidebar({ sideBarData }: { sideBarData: any }) {
                 : section.items?.map((item: any) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
-                        <a href={item.url}>
+                        <Link href={item.url}>
                           {section.icon &&
                             React.createElement(
                               iconMap[section.icon as keyof typeof iconMap],
@@ -236,7 +238,7 @@ export function AppSidebar({ sideBarData }: { sideBarData: any }) {
                             )}
 
                           <span>{item.title}</span>
-                        </a>
+                        </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}

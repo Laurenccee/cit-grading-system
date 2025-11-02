@@ -22,7 +22,7 @@ import {
   InputGroupInput,
 } from '@/components/ui/input-group';
 import { cn } from '@/lib/utils';
-import { fetchData } from '../data/combo-data';
+import { fetchData } from '../data/dropdown';
 
 interface ComboboxProps {
   type: 'course' | 'major' | 'year_level' | 'section';
@@ -57,13 +57,8 @@ export default function Combobox({
         <InputGroupAddon>
           <UserIcon />
         </InputGroupAddon>
-
-        {/* 👁️ Visible label */}
         <InputGroupInput placeholder={`Loading ${type}...`} readOnly />
-
-        {/* 🧠 Hidden input sends value to form */}
         <input type="hidden" name={name} value={value} />
-
         <InputGroupAddon align="inline-end">
           <Button
             variant="noShadow"
@@ -78,23 +73,19 @@ export default function Combobox({
   }
 
   // --- derive data dynamically ---
-  let data: { code: string; name: string }[] = [];
+  let data: { id: string; code: string; name: string }[] = [];
 
   if (type === 'major' && selectedCourse) {
-    const course = fetchcomboData.course.find(
-      (c: any) => c.code === selectedCourse
+    // ✅ Compare course_id directly to selectedCourse (UUID)
+    data = fetchcomboData.major.filter(
+      (m: any) => m.course_id === selectedCourse
     );
-    data = fetchcomboData.major.filter((m: any) => m.course_id === course?.id);
   } else {
     data = fetchcomboData[type] || [];
   }
 
-  const selectedLabel = data.find((f) => f.code === value)?.name ?? '';
-
-  const disabled =
-    type === 'major' &&
-    (!selectedCourse ||
-      !fetchcomboData.course.find((c: any) => c.code === selectedCourse));
+  const selectedLabel = data.find((f) => f.id === value)?.name ?? '';
+  const disabled = type === 'major' && !selectedCourse;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -102,8 +93,6 @@ export default function Combobox({
         <InputGroupAddon>
           <UserIcon />
         </InputGroupAddon>
-
-        {/* 👁️ Visible label */}
         <InputGroupInput
           placeholder={`Select ${type.replace('_', ' ')}...`}
           readOnly
@@ -111,10 +100,7 @@ export default function Combobox({
           disabled={disabled}
           onClick={() => !disabled && setOpen(true)}
         />
-
-        {/* 🧠 Hidden input sends value to form */}
         <input type="hidden" name={name} value={value} />
-
         <InputGroupAddon align="inline-end">
           <PopoverTrigger asChild>
             <Button
@@ -141,11 +127,11 @@ export default function Combobox({
             <CommandGroup>
               {data.map((item) => (
                 <CommandItem
-                  key={item.code}
-                  value={item.code}
-                  onSelect={(currentValue) => {
-                    setValue(currentValue);
-                    onChange?.(currentValue);
+                  key={item.id}
+                  value={item.id}
+                  onSelect={() => {
+                    setValue(item.id);
+                    onChange?.(item.id);
                     setOpen(false);
                   }}
                 >
@@ -153,7 +139,7 @@ export default function Combobox({
                   <CheckIcon
                     className={cn(
                       'ml-auto h-4 w-4',
-                      value === item.code ? 'opacity-100' : 'opacity-0'
+                      value === item.id ? 'opacity-100' : 'opacity-0'
                     )}
                   />
                 </CommandItem>

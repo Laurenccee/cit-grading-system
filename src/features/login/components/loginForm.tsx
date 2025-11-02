@@ -70,7 +70,11 @@ export default function LoginForm() {
           </InputGroup>
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="flex gap-1.5" disabled={loading}>
+          <Button
+            type="submit"
+            className="flex w-full gap-1.5"
+            disabled={loading}
+          >
             {loading ? 'Loading' : 'Access Account'}
             {loading ? (
               <Loader2 className="animate-spin" />

@@ -12,29 +12,18 @@ import {
   useReactTable,
   VisibilityState,
 } from '@tanstack/react-table';
-import {
-  ArrowUpDown,
-  ChevronDown,
-  ClipboardPenLine,
-  Edit2,
-  MoreHorizontal,
-  Trash2,
-} from 'lucide-react';
-
+import { ChevronDown, Edit2, Trash2 } from 'lucide-react';
 import * as React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -43,11 +32,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import StudentForm from './add-student-form';
+
+import InsertStudentForm from '../[major]/components/student-form/add-student-form';
+import UpdateStudentForm from '../[major]/components/student-form/update-student-form';
 import { createClient } from '@/utils/supabase/client';
-import { useEffect, useState } from 'react';
-import { deleteStudent } from '../actions/student';
-import UpdateStudentForm from './update-student-form';
+import { deleteStudent } from '../[major]/actions/student';
+import { FormattedStudent } from '../types/classes';
+import Combobox from './combobox';
 
 export type Student = {
   student_id: string;
@@ -60,104 +51,66 @@ export type Student = {
   section: string;
 };
 
-export default function ClassTable({ data }: { data: Student[] }) {
+interface ClassTableProps {
+  data: FormattedStudent[];
+  classID: string;
+}
+
+export default function ClassTable({ data, classID }: ClassTableProps) {
+  const supabase = createClient();
+  const [students, setStudents] = useState<FormattedStudent[]>(data);
+  const [selectedSection, setSelectedSection] = useState<string>(''); // 👈 selected section
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // 🧮 Extract unique sections from the data
+  const sections = useMemo(() => {
+    const unique = Array.from(
+      new Set(data.map((s) => s.section).filter(Boolean))
+    );
+    return unique;
+  }, [data]);
+
+  // 🧹 Filter students by selected section (if any)
+  const filteredStudents = useMemo(() => {
+    if (!selectedSection || selectedSection === 'All') return students;
+    return students.filter((s) => s.section === selectedSection);
+  }, [students, selectedSection]);
+
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = React.useState({});
+
   const columns: ColumnDef<Student>[] = [
-    {
-      id: 'select',
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && 'indeterminate')
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
     {
       accessorKey: 'student_id',
       header: 'Student ID',
-      cell: ({ row }) => (
-        <div className="capitalize">{row.getValue('student_id')}</div>
-      ),
+      cell: ({ row }) => <div>{row.getValue('student_id')}</div>,
     },
     {
       accessorKey: 'last_name',
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Last Name
-            <ArrowUpDown />
-          </Button>
-        );
-      },
-      cell: ({ row }) => (
-        <div className="capitalize">{row.getValue('last_name')}</div>
-      ),
+      header: 'Last Name',
+      cell: ({ row }) => <div>{row.getValue('last_name')}</div>,
     },
     {
       accessorKey: 'first_name',
       header: 'First Name',
-      cell: ({ row }) => (
-        <div className="capitalize">{row.getValue('first_name')}</div>
-      ),
+      cell: ({ row }) => <div>{row.getValue('first_name')}</div>,
     },
     {
       accessorKey: 'middle_name',
       header: 'Middle Name',
-      cell: ({ row }) => (
-        <div className="capitalize">{row.getValue('middle_name')}</div>
-      ),
+      cell: ({ row }) => <div>{row.getValue('middle_name')}</div>,
     },
-    {
-      accessorKey: 'course',
-      header: 'Course',
-      cell: ({ row }) => (
-        <div className="capitalize">{row.getValue('course')}</div>
-      ),
-    },
-    {
-      accessorKey: 'major',
-      header: 'Major',
-      cell: ({ row }) => (
-        <div className="capitalize">{row.getValue('major')}</div>
-      ),
-    },
-    {
-      accessorKey: 'year_level',
-      header: 'Year Level',
-      cell: ({ row }) => (
-        <div className="capitalize">{row.getValue('year_level')}</div>
-      ),
-    },
-    {
-      accessorKey: 'section',
-      header: 'Section',
-      cell: ({ row }) => (
-        <div className="capitalize">{row.getValue('section')}</div>
-      ),
-    },
-
     {
       id: 'actions',
       enableHiding: false,
       cell: ({ row }) => {
         const student = row.original;
-
         return (
           <div className="flex justify-center gap-2.5">
             <Button
@@ -178,21 +131,10 @@ export default function ClassTable({ data }: { data: Student[] }) {
       },
     },
   ];
-  const supabase = createClient();
-  const [students, setStudents] = useState<Student[]>(data);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
-    data: students,
-    columns,
+    data: filteredStudents,
+    columns: columns as ColumnDef<FormattedStudent, any>[],
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -209,15 +151,15 @@ export default function ClassTable({ data }: { data: Student[] }) {
     },
   });
 
+  // 🗑 Delete handler
   const handleDelete = async (student_id: string) => {
     setLoading(true);
     setError('');
 
     try {
-      const result = await deleteStudent(student_id);
+      const result = await deleteStudent(student_id, classID);
       console.log('Delete student result:', result);
       if (result.status === 'success') {
-        console.log('Student deleted!');
         setStudents((current) =>
           current.filter((s) => s.student_id !== student_id)
         );
@@ -232,6 +174,7 @@ export default function ClassTable({ data }: { data: Student[] }) {
     }
   };
 
+  // 🔁 Real-time listener
   useEffect(() => {
     const channel = supabase
       .channel('students-changes')
@@ -240,16 +183,14 @@ export default function ClassTable({ data }: { data: Student[] }) {
         { event: '*', schema: 'public', table: 'students' },
         (payload) => {
           console.log('Realtime!', payload);
-          console.log(supabase.realtime.getChannels());
-
           setStudents((current) => {
             const { eventType, new: newStudent, old: oldStudent } = payload;
             if (eventType === 'INSERT')
-              return [...current, newStudent as Student];
+              return [...current, newStudent as FormattedStudent];
             if (eventType === 'UPDATE')
               return current.map((s) =>
                 s.student_id === newStudent.student_id
-                  ? (newStudent as Student)
+                  ? (newStudent as FormattedStudent)
                   : s
               );
             if (eventType === 'DELETE')
@@ -280,8 +221,19 @@ export default function ClassTable({ data }: { data: Student[] }) {
           }
           className="max-w-sm"
         />
+
+        {/* 👇 Only show Combobox if more than 1 section */}
+        {sections.length > 1 && (
+          <Combobox
+            type="section"
+            name="section"
+            selectedCourse={selectedSection}
+            onChange={(val) => setSelectedSection(val)}
+          />
+        )}
+
         <div className="flex gap-2.5">
-          <StudentForm />
+          <InsertStudentForm classID={classID} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="default" className="ml-auto">
@@ -292,44 +244,41 @@ export default function ClassTable({ data }: { data: Student[] }) {
               {table
                 .getAllColumns()
                 .filter((column) => column.getCanHide())
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
+                .map((column) => (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
+
       <div>
         <Table>
           <TableHeader className="font-heading">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
-                className="bg-secondary-background text-foreground"
                 key={headerGroup.id}
+                className="bg-secondary-background text-foreground"
               >
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead className="text-foreground" key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  );
-                })}
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id} className="text-foreground">
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
               </TableRow>
             ))}
           </TableHeader>
@@ -337,12 +286,12 @@ export default function ClassTable({ data }: { data: Student[] }) {
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
-                  className="bg-secondary-background text-foreground data-[state=selected]:bg-main data-[state=selected]:text-main-foreground"
                   key={row.id}
                   data-state={row.getIsSelected() && 'selected'}
+                  className="bg-secondary-background text-foreground data-[state=selected]:bg-main data-[state=selected]:text-main-foreground"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell className="px-4 py-2" key={cell.id}>
+                    <TableCell key={cell.id} className="px-4 py-2">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -363,30 +312,6 @@ export default function ClassTable({ data }: { data: Student[] }) {
             )}
           </TableBody>
         </Table>
-      </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="text-foreground flex-1 text-sm">
-          {table.getFilteredSelectedRowModel().rows.length} of{' '}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
-        </div>
-        <div className="space-x-2">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
-        </div>
       </div>
     </div>
   );
