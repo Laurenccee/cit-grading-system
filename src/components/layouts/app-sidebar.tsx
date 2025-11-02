@@ -12,7 +12,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-import * as React from 'react';
+import React, { useState } from 'react';
+import Link from 'next/link';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -47,36 +48,34 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { signOut } from '@/features/login/actions/auth';
+import { getIcon } from '@/constants/icons';
+import type {
+  SidebarData,
+  SidebarTeam,
+  SidebarNavItem,
+  IconName,
+} from '@/types/sidebar';
 
-import {
-  GalleryVerticalEnd,
-  AudioWaveform,
-  Command,
-  LayoutDashboard,
-  BookOpen,
-  Fingerprint,
-  CalendarDays,
-  Users,
-} from 'lucide-react';
-import Link from 'next/link';
-
-const iconMap = {
-  GalleryVerticalEnd,
-  AudioWaveform,
-  Command,
-  LayoutDashboard,
-  BookOpen,
-  Fingerprint,
-  CalendarDays,
-  Users,
+/** Safely render an icon by name */
+const renderIcon = (iconName: IconName | undefined, className: string) => {
+  if (!iconName) return null;
+  const Icon = getIcon(iconName as any);
+  return Icon ? <Icon className={className} /> : null;
 };
 
-export function AppSidebar({ sideBarData }: { sideBarData: any }) {
-  const { isMobile } = useSidebar();
+interface AppSidebarProps {
+  sideBarData: SidebarData;
+}
 
-  const data = sideBarData;
-  // Defensive: ensure data is a plain object
-  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+export function AppSidebar({ sideBarData }: AppSidebarProps) {
+  const { isMobile } = useSidebar();
+  const [activeTeam, setActiveTeam] = useState<SidebarTeam | null>(
+    sideBarData?.teams?.[0] || null
+  );
+  const [loading, setLoading] = useState(false);
+
+  // Defensive checks
+  if (!sideBarData || !activeTeam) {
     return (
       <Sidebar collapsible="icon">
         <SidebarHeader>
@@ -85,29 +84,22 @@ export function AppSidebar({ sideBarData }: { sideBarData: any }) {
       </Sidebar>
     );
   }
-  // Defensive: ensure teams is an array
-  const teams = Array.isArray(data.teams) ? data.teams : [];
-  const [activeTeam, setActiveTeam] = React.useState(
-    teams.length > 0 ? teams[0] : null
-  );
-  const [loading, setLoading] = React.useState(false);
 
-  // Fallback for missing user/email
-  const displayName = data?.user?.name || 'User';
-  const displayEmail = data?.user?.email || 'No email';
+  const displayName = sideBarData.user?.name || 'User';
+  const displayEmail = sideBarData.user?.email || 'No email';
 
-  async function handleSignOut(event: React.MouseEvent) {
+  /** Handle sign out with loading state */
+  const handleSignOut = async (event: React.MouseEvent) => {
     event?.preventDefault();
     setLoading(true);
-    await signOut();
-    setLoading(false);
-  }
-
-  if (!activeTeam) {
-    return null;
-  }
-
-  // When rendering logo:
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Sign out error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -120,14 +112,8 @@ export function AppSidebar({ sideBarData }: { sideBarData: any }) {
                   size="lg"
                   className="data-[state=open]:bg-primary data-[state=open]:text-primary-foreground data-[state=open]:outline-border data-[state=open]:outline-2"
                 >
-                  <div className="flex aspect-square size-8 items-center justify-center ">
-                    {activeTeam.logo &&
-                      React.createElement(
-                        iconMap[activeTeam.logo as keyof typeof iconMap],
-                        {
-                          className: 'size-4',
-                        }
-                      )}
+                  <div className="flex aspect-square size-8 items-center justify-center">
+                    {renderIcon(activeTeam.logo, 'size-4')}
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-heading">
@@ -147,19 +133,14 @@ export function AppSidebar({ sideBarData }: { sideBarData: any }) {
                 <DropdownMenuLabel className="text-sm font-heading">
                   Teams
                 </DropdownMenuLabel>
-                {data.teams.map((team: any, index: number) => (
+                {sideBarData.teams.map((team, index) => (
                   <DropdownMenuItem
                     key={team.name}
                     onClick={() => setActiveTeam(team)}
                     className="gap-2 p-1.5"
                   >
                     <div className="flex size-6 items-center justify-center">
-                      {React.createElement(
-                        iconMap[team.logo as keyof typeof iconMap],
-                        {
-                          className: 'size-4 shrink-0',
-                        }
-                      )}
+                      {renderIcon(team.logo, 'size-4 shrink-0')}
                     </div>
                     {team.name}
                     <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
@@ -178,12 +159,12 @@ export function AppSidebar({ sideBarData }: { sideBarData: any }) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {data.navMain.map((section: any) => (
+        {sideBarData.navMain.map((section) => (
           <SidebarGroup key={section.group}>
             <SidebarGroupLabel>{section.group}</SidebarGroupLabel>
             <SidebarMenu>
               {section.group === 'Classes'
-                ? section.items?.map((item: any) => (
+                ? section.items?.map((item) => (
                     <Collapsible
                       key={item.title}
                       defaultOpen={false}
@@ -195,48 +176,32 @@ export function AppSidebar({ sideBarData }: { sideBarData: any }) {
                             className="data-[state=open]:bg-primary data-[state=open]:outline-border data-[state=open]:text-primary-foreground"
                             tooltip={item.title}
                           >
-                            {React.createElement(
-                              iconMap[section.icon as keyof typeof iconMap],
-                              {
-                                className: 'mr-2 size-4',
-                              }
-                            )}
-
+                            {renderIcon(section.icon, 'mr-2 size-4')}
                             <span>{item.title}</span>
                             <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                           </SidebarMenuButton>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
                           <SidebarMenuSub>
-                            {'children' in item &&
-                              item.children.map(
-                                (subItem: { title: string; url: string }) => (
-                                  <SidebarMenuSubItem key={subItem.title}>
-                                    <SidebarMenuSubButton asChild>
-                                      <Link href={subItem.url}>
-                                        <span>{subItem.title}</span>
-                                      </Link>
-                                    </SidebarMenuSubButton>
-                                  </SidebarMenuSubItem>
-                                )
-                              )}
+                            {item.children?.map((subItem) => (
+                              <SidebarMenuSubItem key={subItem.title}>
+                                <SidebarMenuSubButton asChild>
+                                  <Link href={subItem.url}>
+                                    <span>{subItem.title}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
                           </SidebarMenuSub>
                         </CollapsibleContent>
                       </SidebarMenuItem>
                     </Collapsible>
                   ))
-                : section.items?.map((item: any) => (
+                : section.items?.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
                         <Link href={item.url}>
-                          {section.icon &&
-                            React.createElement(
-                              iconMap[section.icon as keyof typeof iconMap],
-                              {
-                                className: 'mr-2 size-4',
-                              }
-                            )}
-
+                          {renderIcon(section.icon, 'mr-2 size-4')}
                           <span>{item.title}</span>
                         </Link>
                       </SidebarMenuButton>

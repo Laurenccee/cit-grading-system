@@ -1,35 +1,54 @@
-// src/types/sidebar.ts
-export type UserProfile = {
+import { LucideIcon } from 'lucide-react';
+
+/** Icon name for serialization across server/client boundary */
+export type IconName =
+  | 'GalleryVerticalEnd'
+  | 'AudioWaveform'
+  | 'Command'
+  | 'LayoutDashboard'
+  | 'BookOpen'
+  | 'Fingerprint'
+  | 'CalendarDays'
+  | 'Users';
+
+/** User profile information */
+export interface UserProfile {
   id: string;
   email: string;
+  name?: string;
   first_name?: string;
   last_name?: string;
   avatar?: string;
-};
+}
 
-export type Team = {
+/** Team/Organization information */
+export interface Team {
   name: string;
-  logo: React.ComponentType<any>;
+  logo: IconName;
   plan: string;
-};
+}
 
-export type SidebarClassItem = {
+/** Navigation item (can be nested) */
+export interface SidebarNavItem {
   title: string;
   url: string;
-  children?: SidebarClassItem[];
-};
+  icon?: IconName;
+  children?: SidebarNavItem[];
+}
 
-export type SidebarGroup = {
+/** Navigation group containing items */
+export interface SidebarGroup {
   group: string;
-  title: string;
-  url: string;
-  icon: React.ComponentType<any>;
-  isActive?: boolean;
-  items: SidebarClassItem[];
-};
+  icon?: IconName;
+  items: SidebarNavItem[];
+}
 
-export type SidebarData = {
+/** Complete sidebar data structure */
+export interface SidebarData {
   user: UserProfile;
   teams: Team[];
   navMain: SidebarGroup[];
-};
+}
+
+// Alias for backwards compatibility
+export type SidebarTeam = Team;

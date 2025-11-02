@@ -59,18 +59,33 @@ export default function InsertClassForm() {
     if (open) {
       const supabase = createClient();
       const loadDropdowns = async () => {
-        const [coursesRes, majorsRes, yearsRes, sectionsRes] =
-          await Promise.all([
-            supabase.from('courses').select('id, code, name'),
-            supabase.from('majors').select('id, code, name, course_id'),
-            supabase.from('year_levels').select('id, code, name'),
-            supabase.from('sections').select('id, code, name, year_level_id'),
-          ]);
+        try {
+          const [coursesRes, majorsRes, yearsRes, sectionsRes] =
+            await Promise.all([
+              supabase.from('courses').select('id, code, name'),
+              supabase.from('majors').select('id, code, name, course_id'),
+              supabase.from('year_levels').select('id, code, name'),
+              supabase.from('sections').select('id, code, name'),
+            ]);
 
-        if (!coursesRes.error) setCourses(coursesRes.data || []);
-        if (!majorsRes.error) setMajors(majorsRes.data || []);
-        if (!yearsRes.error) setYears(yearsRes.data || []);
-        if (!sectionsRes.error) setSections(sectionsRes.data || []);
+          if (coursesRes.data) setCourses(coursesRes.data);
+          if (majorsRes.data) setMajors(majorsRes.data);
+          if (yearsRes.data) setYears(yearsRes.data);
+          if (sectionsRes.data) {
+            console.log('✅ Sections loaded:', sectionsRes.data);
+            setSections(sectionsRes.data);
+          }
+
+          // Log errors if any
+          if (coursesRes.error)
+            console.error('Courses error:', coursesRes.error);
+          if (majorsRes.error) console.error('Majors error:', majorsRes.error);
+          if (yearsRes.error) console.error('Years error:', yearsRes.error);
+          if (sectionsRes.error)
+            console.error('Sections error:', sectionsRes.error);
+        } catch (err) {
+          console.error('Error loading dropdowns:', err);
+        }
       };
       loadDropdowns();
     }
@@ -218,27 +233,23 @@ export default function InsertClassForm() {
               <Select
                 value={selectedSection}
                 onValueChange={setSelectedSection}
-                disabled={
-                  !sections.some((s) => s.year_level_id === selectedYear)
-                }
+                disabled={sections.length === 0}
               >
                 <SelectTrigger>
                   <SelectValue
                     placeholder={
-                      sections.some((s) => s.year_level_id === selectedYear)
-                        ? 'Select Section'
-                        : 'No Sections Available'
+                      sections.length === 0
+                        ? 'Loading Sections...'
+                        : 'Select Section'
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {sections
-                    .filter((s) => s.year_level_id === selectedYear)
-                    .map((section) => (
-                      <SelectItem key={section.id} value={section.id}>
-                        {section.code}
-                      </SelectItem>
-                    ))}
+                  {sections.map((section) => (
+                    <SelectItem key={section.id} value={section.id}>
+                      {section.code} — {section.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -257,7 +268,7 @@ export default function InsertClassForm() {
                       handleScheduleChange(index, 'day_of_week', value)
                     }
                   >
-                    <SelectTrigger className="w-[160px]">
+                    <SelectTrigger className="w-40">
                       <SelectValue placeholder="Day" />
                     </SelectTrigger>
                     <SelectContent>

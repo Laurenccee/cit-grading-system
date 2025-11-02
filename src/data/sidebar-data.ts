@@ -1,38 +1,40 @@
 import { createClient } from '@/utils/supabase/server';
+import { ROUTES } from '@/constants/config';
+import type { SidebarData, UserProfile } from '@/types/sidebar';
 
-type IconName =
-  | 'GalleryVerticalEnd'
-  | 'AudioWaveform'
-  | 'Command'
-  | 'LayoutDashboard'
-  | 'BookOpen'
-  | 'Fingerprint'
-  | 'CalendarDays'
-  | 'Users';
+interface SidebarDataParams {
+  email: string;
+}
 
-export const getSidebarData = async (p0: { email: string }) => {
+/**
+ * Fetch sidebar data for the authenticated user
+ * Includes user profile, teams, and navigation structure with classes
+ */
+export const getSidebarData = async (
+  params: SidebarDataParams
+): Promise<SidebarData | null> => {
   const supabase = await createClient();
 
-  // 1️⃣ Get authenticated user
+  // Get authenticated user
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    console.error('No authenticated user found:', userError);
-    return null;
+    console.error('Auth error:', userError?.message || 'No authenticated user');
+    throw new Error('User not authenticated');
   }
 
-  // 2️⃣ Get user profile
+  // Get user profile
   const { data: userData } = await supabase
     .from('user_profiles')
     .select('first_name, last_name')
     .eq('user_id', user.id)
     .single();
 
-  // 3️⃣ Fetch classes + relations
-  const { data: classes, error } = await supabase
+  // Fetch classes with relationships
+  const { data: classes = [], error: classError } = await supabase
     .from('classes')
     .select(
       `
@@ -48,23 +50,24 @@ export const getSidebarData = async (p0: { email: string }) => {
     .eq('user_id', user.id)
     .order('subject_code', { ascending: true });
 
-  if (error)
-    console.error('Error loading classes:', JSON.stringify(error, null, 2));
+  if (classError) {
+    console.error('Error loading classes:', classError.message);
+  }
 
-  // 4️⃣ Normalize relations
-  const normalizedClasses =
-    classes?.map((cls: any) => ({
-      ...cls,
-      major: Array.isArray(cls.major) ? cls.major[0] : cls.major,
-      year_level: Array.isArray(cls.year_level)
-        ? cls.year_level[0]
-        : cls.year_level,
-      section: Array.isArray(cls.section) ? cls.section[0] : cls.section,
-    })) ?? [];
+  // Normalize class relationships (handle array responses)
+  const normalizedClasses = (classes || []).map((cls: any) => ({
+    ...cls,
+    major: Array.isArray(cls.major) ? cls.major[0] : cls.major,
+    year_level: Array.isArray(cls.year_level)
+      ? cls.year_level[0]
+      : cls.year_level,
+    section: Array.isArray(cls.section) ? cls.section[0] : cls.section,
+  }));
 
-  // 5️⃣ Group by subject_code
-  const grouped = normalizedClasses.reduce((acc: any, cls: any) => {
+  // Group classes by subject code
+  const classItemsBySubject = normalizedClasses.reduce((acc: any, cls: any) => {
     const key = cls.subject_code;
+
     if (!acc[key]) {
       acc[key] = {
         subject_code: cls.subject_code,
@@ -74,9 +77,13 @@ export const getSidebarData = async (p0: { email: string }) => {
       };
     }
 
-    const displayName = `${cls.major?.code ?? ''} ${
-      cls.year_level?.code ?? ''
-    }${cls.section?.code ?? ''}`.trim();
+    const displayName = [
+      cls.major?.code,
+      cls.year_level?.code,
+      cls.section?.code,
+    ]
+      .filter(Boolean)
+      .join(' ');
 
     acc[key].children.push({
       title: displayName,
@@ -86,33 +93,38 @@ export const getSidebarData = async (p0: { email: string }) => {
     return acc;
   }, {});
 
-  // 6️⃣ Build sidebar class items
-  const classItems = Object.values(grouped).map((cls: any) => ({
+  // Build class items for sidebar
+  const classItems = Object.values(classItemsBySubject).map((cls: any) => ({
     title: cls.subject_code,
     url: `/classes/${cls.id}`,
     children: cls.children,
   }));
 
-  // 7️⃣ Return sidebar structure
-  return {
+  // Build and return sidebar data structure
+  const sidebarData: SidebarData = {
     user: {
+      id: user.id,
       name: userData
         ? `${userData.first_name} ${userData.last_name}`
-        : user.email,
-      email: user.email,
+        : user.email || 'User',
+      email: user.email || '',
       avatar: '/avatars/shadcn.jpg',
     },
     teams: [
-      { name: 'Faculty Portal', logo: 'GalleryVerticalEnd', plan: 'Academic' },
-    ] as { name: string; logo: IconName; plan: string }[],
+      {
+        name: 'Faculty Portal',
+        logo: 'GalleryVerticalEnd',
+        plan: 'Academic',
+      },
+    ],
     navMain: [
       {
         group: 'Home',
         icon: 'LayoutDashboard',
         items: [
-          { title: 'Dashboard', url: '/dashboard' },
-          { title: 'My Classes', url: '/classes' },
-          { title: 'Schedule', url: '/schedule' },
+          { title: 'Dashboard', url: ROUTES.PROTECTED.DASHBOARD },
+          { title: 'My Classes', url: ROUTES.PROTECTED.CLASSES },
+          { title: 'Schedule', url: ROUTES.PROTECTED.SCHEDULE },
         ],
       },
       {
@@ -124,17 +136,23 @@ export const getSidebarData = async (p0: { email: string }) => {
         group: 'Grades',
         icon: 'BookOpen',
         items: [
-          { title: 'Raw Grade', url: '/grades/raw' },
-          { title: 'Transmuted Grade', url: '/grades/transmuted' },
-          { title: 'Reports', url: '/grades/reports' },
+          { title: 'Raw Grade', url: ROUTES.PROTECTED.GRADES.RAW },
+          {
+            title: 'Transmuted Grade',
+            url: ROUTES.PROTECTED.GRADES.TRANSMUTED,
+          },
+          { title: 'Reports', url: ROUTES.PROTECTED.GRADES.REPORTS },
         ],
       },
       {
         group: 'Attendance',
         icon: 'Fingerprint',
         items: [
-          { title: 'Daily Attendance', url: '/attendance/daily' },
-          { title: 'Attendance Reports', url: '/attendance/reports' },
+          { title: 'Daily Attendance', url: ROUTES.PROTECTED.ATTENDANCE.DAILY },
+          {
+            title: 'Attendance Reports',
+            url: ROUTES.PROTECTED.ATTENDANCE.REPORTS,
+          },
         ],
       },
       {
@@ -147,6 +165,8 @@ export const getSidebarData = async (p0: { email: string }) => {
       },
     ],
   };
+
+  return sidebarData;
 };
 
 export default getSidebarData;

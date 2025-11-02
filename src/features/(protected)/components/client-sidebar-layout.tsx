@@ -21,7 +21,7 @@ export default function PersistentSidebarLayout({
     <SidebarProvider>
       <AppSidebar sideBarData={data} />
       <SidebarInset>
-        <header className="flex h-16.5 shrink-0 border-b-2 items-center justify-between gap-2">
+        <header className="sticky top-0 z-10 flex h-16.5 shrink-0 border-b-2 items-center justify-between gap-2 bg-white">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger />
             <BreadcrumbDynamic sidebarData={data} />

@@ -62,5 +62,6 @@ export interface FormattedClass {
   year_level: string; // year level code
   year_level_id?: string; // ✅ new
   studentCount?: number;
+  enrollmentCount?: number; // Total enrolled students
   schedules?: { day_of_week: string; start_time: string; end_time: string }[];
 }

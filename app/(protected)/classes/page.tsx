@@ -54,38 +54,56 @@ export default async function ClassPage() {
       year_level: year_level.code || '',
       year_level_id: year_level.id || '',
       schedules: cls.class_schedules || [],
+      enrollmentCount: cls.class_enrollments?.[0]?.count ?? 0,
     };
   });
   const hasClasses = formattedData.length > 0;
 
   return (
-    <div className="p-6 w-full flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">My Classes Overview</h1>
-        <InsertClassForm />
-      </div>
-
-      {/* Main Content */}
-      {hasClasses ? (
-        <div className="flex flex-col lg:flex-row gap-6 w-full">
-          {/* Left: List of classes */}
-          <ClassList
-            initialClasses={formattedData}
-            dropdownData={dropdownData}
-          />
-
-          {/* Right: Chart visualization */}
-          <div className="flex justify-center items-start">
-            <ClassCharts students={formattedData} className="w-full" />
+    <>
+      <div className="flex gap-5">
+        <div className="flex flex-col w-full gap-5">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Classes</h1>
+              <p className="text-sm text-foreground/60 mt-0.5">
+                Manage your classes and enrollments
+              </p>
+            </div>
+            <InsertClassForm />
           </div>
+
+          {/* Main Content */}
+          {hasClasses ? (
+            <div className="flex flex-col 2xl:flex-row gap-2.5 w-full">
+              {/* Left: List of classes */}
+              <div className="flex-1">
+                <ClassList
+                  initialClasses={formattedData}
+                  dropdownData={dropdownData}
+                />
+              </div>
+
+              {/* Right: Chart visualization */}
+              <div className="w-full 2xl:w-96 shrink-0">
+                <ClassCharts students={formattedData} className="w-full" />
+              </div>
+            </div>
+          ) : (
+            <div className="border-2 border-border bg-background shadow-shadow p-12 text-center">
+              <h2 className="text-xl font-bold text-foreground mb-2">
+                No Classes Yet
+              </h2>
+              <p className="text-sm text-foreground/60 mb-6 max-w-sm mx-auto">
+                Get started by creating your first class. Add courses, manage
+                enrollments, and track student progress.
+              </p>
+              <InsertClassForm />
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center text-center py-10 text-muted-foreground">
-          <p>No classes yet.</p>
-          <InsertClassForm />
-        </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
